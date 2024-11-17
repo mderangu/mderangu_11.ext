@@ -1,0 +1,103 @@
+---
+title: "Mderangu_Integer"
+output:
+  html_document: default
+  word_document: default
+date: "2024-11-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+
+##Integer Programming (IP) is a type of mathematical optimization technique used to solve decision-making problems where some or all of the decision variables are restricted to be integers. It is widely used in industries such as logistics, scheduling, finance, and manufacturing, where solutions must be whole numbers.
+
+# Load the lpSolveAPI package
+library(lpSolveAPI)
+
+# Initialize a linear programming model with 0 constraints and 7 decision variables
+model <- make.lp(0, 7)
+
+# Define the objective function (weekly wages for workers in each shift)
+set.objfn(model, c(775, 800, 800, 800, 800, 775, 750))
+
+# Specify that all decision variables are integers
+set.type(model, 1:7, "integer")
+
+lp.control(model, sense = 'min')
+
+
+# Add constraints to ensure sufficient workers for each day
+# Sunday
+add.constraint(model, c(0, 1, 1, 1, 1, 1, 0), ">=", 18)
+# Monday
+add.constraint(model, c(0, 0, 1, 1, 1, 1, 1), ">=", 27)
+# Tuesday
+add.constraint(model, c(1, 0, 0, 1, 1, 1, 1), ">=", 22)
+# Wednesday
+add.constraint(model, c(1, 1, 0, 0, 1, 1, 1), ">=", 26)
+# Thursday
+add.constraint(model, c(1, 1, 1, 0, 0, 1, 1), ">=", 25)
+# Friday
+add.constraint(model, c(1, 1, 1, 1, 0, 0, 1), ">=", 21)
+# Saturday
+add.constraint(model, c(1, 1, 1, 1, 1, 0, 0), ">=", 19)
+
+# Matrix to represent daily worker requirements
+daily_worker_demand <- matrix(c(
+  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+  18, 27, 22, 26, 25, 21, 19
+), ncol = 2, byrow = FALSE)
+
+# Assign column names for better readability
+colnames(daily_worker_demand) <- c("Day", "Required_Workers")
+
+# Convert to a tabular format for easy viewing
+as.table(daily_worker_demand)
+
+# Matrix to represent shift details, days off, and weekly wages
+shift_schedule_and_wages <- matrix(c(
+  1, 2, 3, 4, 5, 6, 7,
+  "Sun & Mon Off", "Mon & Tue Off", "Tue & Wed Off", "Wed & Thu Off", 
+  "Thu & Fri Off", "Fri & Sat Off", "Sat & Sun Off",
+  "$775", "$800", "$800", "$800", "$800", "$775", "$750"
+), ncol = 3, byrow = FALSE)
+
+# Assign column names for clarity
+colnames(shift_schedule_and_wages) <- c("Shift_ID", "Days_Off", "Weekly_Wage")
+
+# Convert to a tabular format for easy viewing
+as.table(shift_schedule_and_wages)
+
+
+# Solve the optimization problem
+solve(model)
+
+# Get the total minimized cost (objective value)
+total_cost <- get.objective(model)
+cat("Total Cost: $", total_cost, "\n")
+
+# Get the optimal number of workers assigned to each shift
+workers_per_shift <- get.variables(model)
+cat("Number of workers assigned to each shift:\n")
+print(workers_per_shift)
+
+# Get the number of workers available on each day based on the solution
+daily_worker_coverage <- get.constraints(model)
+cat("Number of workers available each day:\n")
+print(daily_worker_coverage)
+
+##Conclusion:
+
+##Minimized Cost: The total weekly cost is minimized at $25,675, considering shift-specific wages and additional weekend pay.
+
+##Worker Allocation: The optimal number of workers assigned to each shift ensures that no constraints are violated.
+
+##Daily Labor Needs: The number of workers available each day satisfies or exceeds the required demand:
+
+##No shortages occur, as every day's coverage meets or exceeds the specified minimum.
+
+```
